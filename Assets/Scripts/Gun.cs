@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
@@ -11,6 +12,8 @@ public class Gun : NetworkBehaviour
 
     private int currentAmmo;
     private float lastFiredTime;
+
+    [SerializeField] private List<GameObject> spawnedBullets = new List<GameObject>();
 
     private void Start()
     {
@@ -30,15 +33,15 @@ public class Gun : NetworkBehaviour
     }
 
     // ServerRpc to handle bullet spawning on the server
-    [ServerRpc]
+    [ServerRpc (RequireOwnership = false)]
     private void FireServerRpc(ServerRpcParams rpcParams = default)
     {
         // Spawn bullet and set direction
         var bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
-
+        spawnedBullets.Add(bullet);
         // Attach the NetworkObject component for networked spawning
+        bullet.GetComponent<Bullet>().parent = this;
         bullet.GetComponent<NetworkObject>().Spawn();
-
         // Set bullet's velocity based on player's forward direction
         Vector3 bulletDirection = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
         bullet.GetComponent<Rigidbody>().velocity = bulletDirection * bulletSpeed;
@@ -46,6 +49,15 @@ public class Gun : NetworkBehaviour
         // Update cooldown and ammo for the firing player
         lastFiredTime = Time.time;
         currentAmmo--;
+    }
+
+    // Optional: method to despawn bullets
+    [ServerRpc (RequireOwnership = false)]
+    public void DespawnBulletsServerRpc()
+    {
+        GameObject toDestroy = spawnedBullets[0];
+        toDestroy.GetComponent<NetworkObject>().Despawn();
+        spawnedBullets.RemoveAt(0);
     }
 
     // Optional: method to reload ammo

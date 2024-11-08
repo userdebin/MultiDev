@@ -10,18 +10,23 @@ public class NetworkUI : NetworkBehaviour
     [SerializeField] private Button hostButton;
     [SerializeField] private Button clientButton;
     [SerializeField] private TextMeshProUGUI playersCountText;
+    public GameObject buttonHolder;
+
 
     private NetworkVariable<int> playersNum = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone);
+
     private void Awake()
     {
         hostButton.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.StartHost();
+            buttonHolder.SetActive(false);
         });
 
         clientButton.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.StartClient();
+            buttonHolder.SetActive(false);
         });
     }
 

@@ -46,7 +46,7 @@ public class PlayerMovement : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void UpdatePositionServerRpc()
     {
-        transform.position = new Vector3(Random.Range(positionRange, -positionRange), 0, Random.Range(positionRange, -positionRange));
+        transform.position = new Vector3(Random.Range(positionRange, -positionRange), 0.75f, Random.Range(positionRange, -positionRange));
         transform.rotation = Quaternion.Euler(0, 180, 0); // Initial rotation facing a specific direction
     }
 }

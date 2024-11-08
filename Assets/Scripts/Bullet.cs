@@ -1,24 +1,49 @@
 // Bullet.cs
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public class Bullet : MonoBehaviour
+public class Bullet : NetworkBehaviour
 {
     public float life = 3f;
+    public int bulletDamage = 10;
+    public NetworkObject networkObject;
+    public Gun parent;
 
     private void Awake()
     {
-        Destroy(gameObject, life);
+        // Destroy(gameObject, life);
     }
 
-    void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
-        // Add a check for specific tags if necessary, e.g., "Enemy"
-        if (collision.gameObject.CompareTag("Enemy"))
+        if (other.gameObject.CompareTag("Obstacle"))
         {
-            Destroy(collision.gameObject);
+            if (parent == null)
+            {
+                return;
+            }
+
+            parent.DespawnBulletsServerRpc();
         }
-        Destroy(gameObject);
+        else if (other.gameObject.CompareTag("Player"))
+        {
+            if (parent == null)
+            {
+                return;
+            }
+
+            parent.DespawnBulletsServerRpc();
+            other.gameObject.GetComponent<PlayerSettings>().TakeDamageServerRpc(bulletDamage);
+        }
+    }
+
+    private void DespawnObject()
+    {
+        networkObject.DontDestroyWithOwner = true;
+        networkObject.Despawn();
     }
 }
