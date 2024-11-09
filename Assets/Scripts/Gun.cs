@@ -10,7 +10,9 @@ public class Gun : NetworkBehaviour
     public int maxAmmo = 10;
     public float cooldownTime = 0.5f;
 
-    private int currentAmmo;
+    public int currentAmmo;
+    public int velocityAmmo = 0;
+    public int powerAmmo = 0;
     private float lastFiredTime;
 
     [SerializeField] private List<GameObject> spawnedBullets = new List<GameObject>();
@@ -33,11 +35,30 @@ public class Gun : NetworkBehaviour
     }
 
     // ServerRpc to handle bullet spawning on the server
-    [ServerRpc (RequireOwnership = false)]
+    [ServerRpc(RequireOwnership = false)]
     private void FireServerRpc(ServerRpcParams rpcParams = default)
     {
         // Spawn bullet and set direction
         var bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
+
+        if (velocityAmmo > 0)
+        {
+            bulletSpeed *= 2f;
+            velocityAmmo--;
+        }
+        else if (powerAmmo > 0)
+        {
+            bullet.GetComponent<Bullet>().SetPowerBullet();
+            powerAmmo--;
+        }
+        else
+        {
+            bullet.GetComponent<Bullet>().SetNormalBullet();
+            bulletSpeed = 10f;
+            currentAmmo--;
+        }
+
+
         spawnedBullets.Add(bullet);
         // Attach the NetworkObject component for networked spawning
         bullet.GetComponent<Bullet>().parent = this;
@@ -48,11 +69,10 @@ public class Gun : NetworkBehaviour
 
         // Update cooldown and ammo for the firing player
         lastFiredTime = Time.time;
-        currentAmmo--;
     }
 
     // Optional: method to despawn bullets
-    [ServerRpc (RequireOwnership = false)]
+    [ServerRpc(RequireOwnership = false)]
     public void DespawnBulletsServerRpc()
     {
         GameObject toDestroy = spawnedBullets[0];

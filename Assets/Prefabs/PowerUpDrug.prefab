@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 4136180834148224311}
   - component: {fileID: 5046312981956625569}
   m_Layer: 0
-  m_Name: PowerUpHealth
+  m_Name: PowerUpDrug
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -65,7 +65,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 753962f1cdf73cd408d40d22632c3b4f, type: 2}
+  - {fileID: 2100000, guid: 3e798ae1f850e9c46bbe2810ca1232d2, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3240038950
+  GlobalObjectIdHash: 671525721
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -141,7 +141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec8dd26bae5e1b1448ae487d24d8867d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  powerUpType: 2
+  powerUpType: 0
   networkObject: {fileID: 8560815417325310247}
   powerDuration:
     m_InternalValue: 10

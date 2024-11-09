@@ -12,6 +12,7 @@ public class Bullet : NetworkBehaviour
     public int bulletDamage = 10;
     public NetworkObject networkObject;
     public Gun parent;
+    public bool isPowerBullet = false;
 
     private void Awake()
     {
@@ -36,6 +37,12 @@ public class Bullet : NetworkBehaviour
                 return;
             }
 
+            if (isPowerBullet)
+            {
+                parent.DespawnBulletsServerRpc();
+                other.gameObject.GetComponent<PlayerSettings>().TakeDamageServerRpc(666);
+            }
+
             parent.DespawnBulletsServerRpc();
             other.gameObject.GetComponent<PlayerSettings>().TakeDamageServerRpc(bulletDamage);
         }
@@ -45,5 +52,15 @@ public class Bullet : NetworkBehaviour
     {
         networkObject.DontDestroyWithOwner = true;
         networkObject.Despawn();
+    }
+
+    public void SetPowerBullet()
+    {
+        isPowerBullet = true;
+    }
+
+    public void SetNormalBullet()
+    {
+        isPowerBullet = false;
     }
 }

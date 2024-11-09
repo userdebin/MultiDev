@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlayerMovement : NetworkBehaviour
 {
-    [SerializeField] private float movementSpeed = 7f;
+    [SerializeField] public float movementSpeed = 7f;
     [SerializeField] private float rotationSpeed = 500f;
     [SerializeField] private float positionRange = 5f;
 

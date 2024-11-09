@@ -10,7 +10,9 @@ public class PowerUp : NetworkBehaviour
     {
         SpeedBoost,
         NormalBullet,
-        HealthRestore
+        HealthRestore,
+        PowerBullet,
+        VelocityBullet
     }
 
     public PowerUpType powerUpType;
@@ -27,10 +29,8 @@ public class PowerUp : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Triggered");
         if (IsServer && other.CompareTag("Player"))
         {
-            Debug.Log("Player Triggered");
             PlayerSettings player = other.GetComponent<PlayerSettings>();
             if (player != null)
             {
@@ -39,19 +39,30 @@ public class PowerUp : NetworkBehaviour
             }
         }
     }
-    
+
     private void ApplyPowerUp(PlayerSettings player)
     {
         switch (powerUpType)
         {
             case PowerUpType.SpeedBoost:
                 Debug.Log("Speed Boost");
+                player.IncreaseSpeedServerRpc();
                 break;
             case PowerUpType.NormalBullet:
+                player.IncreaseBulletServerRpc(5);
                 Debug.Log("Normal Bullet");
                 break;
             case PowerUpType.HealthRestore:
-                player.RestoreHealthServerRpc(10);
+                player.RestoreHealthServerRpc(1);
+                Debug.Log("Health Restore");
+                break;
+            case PowerUpType.PowerBullet:
+                player.IncreasePowerBulletServerRpc(1);
+                Debug.Log("Power Bullet");
+                break;
+            case PowerUpType.VelocityBullet:
+                player.IncreaseVelocityBulletServerRpc(1);
+                Debug.Log("Velocity Bullet");
                 break;
         }
     }
@@ -62,7 +73,7 @@ public class PowerUp : NetworkBehaviour
         networkObject.DontDestroyWithOwner = true;
         networkObject.Despawn();
     }
-    
+
 
     private IEnumerator AutoDespawnAfterDuration()
     {

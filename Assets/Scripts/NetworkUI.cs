@@ -20,6 +20,7 @@ public class NetworkUI : NetworkBehaviour
         hostButton.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.StartHost();
+            //Register player to gamemanager
             buttonHolder.SetActive(false);
         });
 

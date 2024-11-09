@@ -124,6 +124,9 @@ MonoBehaviour:
   bulletSpeed: 10
   maxAmmo: 10
   cooldownTime: 0.5
+  currentAmmo: 0
+  velocityAmmo: 0
+  powerAmmo: 0
   spawnedBullets: []
 --- !u!1 &683232668460675427
 GameObject:
@@ -497,6 +500,8 @@ MonoBehaviour:
   currentHealth:
     m_InternalValue: 100
   networkObject: {fileID: -9082971750954329630}
+  gun: {fileID: 1264662214209953907}
+  playerMovement: {fileID: 2792035459383081790}
 --- !u!114 &2843666520394564772
 MonoBehaviour:
   m_ObjectHideFlags: 0
