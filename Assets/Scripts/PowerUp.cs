@@ -34,36 +34,10 @@ public class PowerUp : NetworkBehaviour
             PlayerSettings player = other.GetComponent<PlayerSettings>();
             if (player != null)
             {
-                ApplyPowerUp(player);
+                // ApplyPowerUpServerRpc(player.NetworkObjectId);
+                player.ApplyPowerUpClientRpc(powerUpType);
                 DespawnObjectServerRpc();
             }
-        }
-    }
-
-    private void ApplyPowerUp(PlayerSettings player)
-    {
-        switch (powerUpType)
-        {
-            case PowerUpType.SpeedBoost:
-                Debug.Log("Speed Boost");
-                player.IncreaseSpeedServerRpc();
-                break;
-            case PowerUpType.NormalBullet:
-                player.IncreaseBulletServerRpc(5);
-                Debug.Log("Normal Bullet");
-                break;
-            case PowerUpType.HealthRestore:
-                player.RestoreHealthServerRpc(1);
-                Debug.Log("Health Restore");
-                break;
-            case PowerUpType.PowerBullet:
-                player.IncreasePowerBulletServerRpc(1);
-                Debug.Log("Power Bullet");
-                break;
-            case PowerUpType.VelocityBullet:
-                player.IncreaseVelocityBulletServerRpc(1);
-                Debug.Log("Velocity Bullet");
-                break;
         }
     }
 

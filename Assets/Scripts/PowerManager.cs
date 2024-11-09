@@ -48,7 +48,7 @@ public class PowerUpManager : NetworkBehaviour
         }
     }
 
-    [ServerRpc]
+    [ServerRpc (RequireOwnership = false)]
     private void SpawnPowerUpServerRpc()
     {
         Vector3 spawnPosition = GetRandomSpawnPosition();

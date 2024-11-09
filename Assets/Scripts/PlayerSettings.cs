@@ -5,21 +5,25 @@ using UnityEngine;
 using TMPro;
 using Unity.Collections;
 
-public class PlayerSettings : NetworkBehaviour
+public class PlayerSettings : NetworkBehaviour, INetworkSerializable
 {
     [SerializeField] private MeshRenderer meshRenderer;
     [SerializeField] private TextMeshProUGUI playerName;
 
-    private NetworkVariable<FixedString128Bytes> networkPlayerName = new NetworkVariable<FixedString128Bytes>(
+    public NetworkVariable<FixedString128Bytes> networkPlayerName = new NetworkVariable<FixedString128Bytes>(
         "Player: 0", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    public int playerIndex;
     public List<Color> colors = new List<Color>();
 
     // Add health variable
-    [SerializeField] private NetworkVariable<int> maxHealth = new NetworkVariable<int>(3);
+    // [SerializeField] private NetworkVariable<int> maxHealth = new NetworkVariable<int>(3);
 
     // [SerializeField] private int currentHealth;
-    public NetworkVariable<int> currentHealth = new NetworkVariable<int>(3);
+    [SerializeField] private int maxHealth;
+
+    // public NetworkVariable<int> currentHealth = new NetworkVariable<int>(3);
+    public int currentHealth;
 
     [SerializeField] private NetworkObject networkObject;
     [SerializeField] private Gun gun;
@@ -38,6 +42,7 @@ public class PlayerSettings : NetworkBehaviour
         networkPlayerName.Value = "Player: " + (OwnerClientId + 1);
         playerName.text = networkPlayerName.Value.ToString();
         meshRenderer.material.color = colors[(int)OwnerClientId];
+        playerIndex = (int)OwnerClientId;
     }
 
     // Method to handle taking damage
@@ -45,41 +50,11 @@ public class PlayerSettings : NetworkBehaviour
     public void TakeDamageServerRpc(int damage)
     {
         if (!IsServer) return;
-        currentHealth.Value -= damage;
-        if (currentHealth.Value <= 0)
+        currentHealth -= damage;
+        if (currentHealth <= 0)
         {
             networkObject.Despawn();
         }
-    }
-
-    // Method to handle health restoration
-    [ServerRpc(RequireOwnership = false)]
-    public void RestoreHealthServerRpc(int health)
-    {
-        if (!IsServer) return;
-        currentHealth.Value += health;
-        if (currentHealth.Value > maxHealth.Value)
-        {
-            currentHealth.Value = maxHealth.Value;
-        }
-    }
-
-    // Method to handle bullet increase
-    [ServerRpc(RequireOwnership = false)]
-    public void IncreaseBulletServerRpc(int bullet)
-    {
-        if (!IsServer) return;
-        gun.currentAmmo += bullet;
-    }
-
-    // Method to handle speed increase
-    [ServerRpc(RequireOwnership = false)]
-    public void IncreaseSpeedServerRpc()
-    {
-        if (!IsServer) return;
-        //increase player movement speed for 3 seconds
-        playerMovement.movementSpeed *= 1.5f;
-        StartCoroutine(ResetSpeed());
     }
 
     private IEnumerator ResetSpeed()
@@ -88,19 +63,45 @@ public class PlayerSettings : NetworkBehaviour
         playerMovement.movementSpeed = 7f;
     }
 
-    // Method to handle power bullet increase
-    [ServerRpc(RequireOwnership = false)]
-    public void IncreasePowerBulletServerRpc(int powerBullet)
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
-        if (!IsServer) return;
-        gun.powerAmmo += powerBullet;
+        serializer.SerializeValue(ref maxHealth);
+        serializer.SerializeValue(ref currentHealth);
     }
 
-    // Method to handle velocity bullet increase
-    [ServerRpc(RequireOwnership = false)]
-    public void IncreaseVelocityBulletServerRpc(int velocityBullet)
+    //apply power up to client side
+    // 
+    [ClientRpc]
+    public void ApplyPowerUpClientRpc(PowerUp.PowerUpType powerUpType)
     {
-        if (!IsServer) return;
-        gun.velocityAmmo += velocityBullet;
+        switch (powerUpType)
+        {
+            case PowerUp.PowerUpType.SpeedBoost:
+                Debug.Log("Speed Boost");
+                playerMovement.movementSpeed *= 1.5f;
+                StartCoroutine(ResetSpeed());
+                break;
+            case PowerUp.PowerUpType.NormalBullet:
+                gun.currentAmmo += 5;
+                Debug.Log("Normal Bullet");
+                break;
+            case PowerUp.PowerUpType.HealthRestore:
+                currentHealth += 1;
+                if (currentHealth > maxHealth)
+                {
+                    currentHealth = maxHealth;
+                }
+
+                Debug.Log("Health Restore");
+                break;
+            case PowerUp.PowerUpType.PowerBullet:
+                gun.powerAmmo += 1;
+                Debug.Log("Power Bullet");
+                break;
+            case PowerUp.PowerUpType.VelocityBullet:
+                gun.velocityAmmo += 1;
+                Debug.Log("Velocity Bullet");
+                break;
+        }
     }
 }

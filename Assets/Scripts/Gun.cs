@@ -35,7 +35,7 @@ public class Gun : NetworkBehaviour
     }
 
     // ServerRpc to handle bullet spawning on the server
-    [ServerRpc(RequireOwnership = false)]
+    [ServerRpc (RequireOwnership = false)]
     private void FireServerRpc(ServerRpcParams rpcParams = default)
     {
         // Spawn bullet and set direction
@@ -58,7 +58,6 @@ public class Gun : NetworkBehaviour
             currentAmmo--;
         }
 
-
         spawnedBullets.Add(bullet);
         // Attach the NetworkObject component for networked spawning
         bullet.GetComponent<Bullet>().parent = this;
@@ -72,7 +71,7 @@ public class Gun : NetworkBehaviour
     }
 
     // Optional: method to despawn bullets
-    [ServerRpc(RequireOwnership = false)]
+    [ServerRpc (RequireOwnership = false)]
     public void DespawnBulletsServerRpc()
     {
         GameObject toDestroy = spawnedBullets[0];

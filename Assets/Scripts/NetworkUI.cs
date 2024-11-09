@@ -12,7 +12,6 @@ public class NetworkUI : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI playersCountText;
     public GameObject buttonHolder;
 
-
     private NetworkVariable<int> playersNum = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone);
 
     private void Awake()
