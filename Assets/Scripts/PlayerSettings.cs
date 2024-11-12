@@ -5,7 +5,7 @@ using UnityEngine;
 using TMPro;
 using Unity.Collections;
 
-public class PlayerSettings : NetworkBehaviour, INetworkSerializable
+public class PlayerSettings : NetworkBehaviour
 {
     [SerializeField] private MeshRenderer meshRenderer;
     [SerializeField] private TextMeshProUGUI playerName;
@@ -16,13 +16,7 @@ public class PlayerSettings : NetworkBehaviour, INetworkSerializable
     public int playerIndex;
     public List<Color> colors = new List<Color>();
 
-    // Add health variable
-    // [SerializeField] private NetworkVariable<int> maxHealth = new NetworkVariable<int>(3);
-
-    // [SerializeField] private int currentHealth;
     [SerializeField] private int maxHealth;
-
-    // public NetworkVariable<int> currentHealth = new NetworkVariable<int>(3);
     public int currentHealth;
 
     [SerializeField] private NetworkObject networkObject;
@@ -31,7 +25,6 @@ public class PlayerSettings : NetworkBehaviour, INetworkSerializable
 
     private void Awake()
     {
-        //Register to gamemanager
         GameManager.Instance.players.Add(this);
         meshRenderer = GetComponentInChildren<MeshRenderer>();
         currentHealth = maxHealth;
@@ -43,65 +36,43 @@ public class PlayerSettings : NetworkBehaviour, INetworkSerializable
         playerName.text = networkPlayerName.Value.ToString();
         meshRenderer.material.color = colors[(int)OwnerClientId];
         playerIndex = (int)OwnerClientId;
+
+        // Inisialisasi UI health di awal
+        if (IsOwner)
+        {
+            GetComponent<PlayerUIManager>().SetHealth(currentHealth);
+        }
     }
 
-    // Method to handle taking damage
+    // Method untuk menerima damage
     [ServerRpc(RequireOwnership = false)]
     public void TakeDamageServerRpc(int damage)
     {
         if (!IsServer) return;
         currentHealth -= damage;
+
+        // Update UI health untuk pemain lokal
+        if (IsOwner)
+        {
+            GetComponent<PlayerUIManager>().SetHealth(currentHealth);
+        }
+
         if (currentHealth <= 0)
         {
             networkObject.Despawn();
         }
     }
 
-    private IEnumerator ResetSpeed()
+    // Method untuk mengembalikan health
+    public void RestoreHealth(int amount)
     {
-        yield return new WaitForSeconds(3f);
-        playerMovement.movementSpeed = 7f;
-    }
+        currentHealth += amount;
+        if (currentHealth > maxHealth) currentHealth = maxHealth;
 
-    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-    {
-        serializer.SerializeValue(ref maxHealth);
-        serializer.SerializeValue(ref currentHealth);
-    }
-
-    //apply power up to client side
-    // 
-    [ClientRpc]
-    public void ApplyPowerUpClientRpc(PowerUp.PowerUpType powerUpType)
-    {
-        switch (powerUpType)
+        // Update UI health untuk pemain lokal
+        if (IsOwner)
         {
-            case PowerUp.PowerUpType.SpeedBoost:
-                Debug.Log("Speed Boost");
-                playerMovement.movementSpeed *= 1.5f;
-                StartCoroutine(ResetSpeed());
-                break;
-            case PowerUp.PowerUpType.NormalBullet:
-                gun.currentAmmo += 5;
-                Debug.Log("Normal Bullet");
-                break;
-            case PowerUp.PowerUpType.HealthRestore:
-                currentHealth += 1;
-                if (currentHealth > maxHealth)
-                {
-                    currentHealth = maxHealth;
-                }
-
-                Debug.Log("Health Restore");
-                break;
-            case PowerUp.PowerUpType.PowerBullet:
-                gun.powerAmmo += 1;
-                Debug.Log("Power Bullet");
-                break;
-            case PowerUp.PowerUpType.VelocityBullet:
-                gun.velocityAmmo += 1;
-                Debug.Log("Velocity Bullet");
-                break;
+            GetComponent<PlayerUIManager>().SetHealth(currentHealth);
         }
     }
 }
