@@ -6,10 +6,10 @@ using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class LobbyUI : MonoBehaviour {
+public class OnlineLobbyUI : MonoBehaviour {
 
 
-    public static LobbyUI Instance { get; private set; }
+    public static OnlineLobbyUI Instance { get; private set; }
 
 
     [SerializeField] private Transform playerSingleTemplate;
