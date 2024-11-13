@@ -44,7 +44,7 @@ public class OnlineLobbyUI : MonoBehaviour {
         });
 
         changeGameModeButton.onClick.AddListener(() => {
-            LobbyManager.Instance.ChangeGameMode();
+            LobbyManager.Instance.ChangeGameMode(LobbyManager.GameMode.CaptureTheFlag); // Ubah ke mode yang diinginkan
         });
     }
 
