@@ -16,25 +16,21 @@ public class PlayerSettings : NetworkBehaviour, INetworkSerializable
     public int playerIndex;
     public List<Color> colors = new List<Color>();
 
-    // Add health variable
-    // [SerializeField] private NetworkVariable<int> maxHealth = new NetworkVariable<int>(3);
-
-    // [SerializeField] private int currentHealth;
     [SerializeField] private int maxHealth;
-
-    // public NetworkVariable<int> currentHealth = new NetworkVariable<int>(3);
     public int currentHealth;
 
     [SerializeField] private NetworkObject networkObject;
     [SerializeField] private Gun gun;
     [SerializeField] private PlayerMovement playerMovement;
 
+    private PlayerUIManager playerUIManager;
+
     private void Awake()
     {
-        //Register to gamemanager
         GameManager.Instance.players.Add(this);
         meshRenderer = GetComponentInChildren<MeshRenderer>();
         currentHealth = maxHealth;
+        playerUIManager = GetComponent<PlayerUIManager>();
     }
 
     public override void OnNetworkSpawn()
@@ -43,14 +39,25 @@ public class PlayerSettings : NetworkBehaviour, INetworkSerializable
         playerName.text = networkPlayerName.Value.ToString();
         meshRenderer.material.color = colors[(int)OwnerClientId];
         playerIndex = (int)OwnerClientId;
+
+        if (IsOwner && playerUIManager != null)
+        {
+            playerUIManager.UpdateHealthUI();
+            playerUIManager.UpdateAmmoUI();
+        }
     }
 
-    // Method to handle taking damage
     [ServerRpc(RequireOwnership = false)]
     public void TakeDamageServerRpc(int damage)
     {
         if (!IsServer) return;
         currentHealth -= damage;
+
+        if (IsOwner && playerUIManager != null)
+        {
+            playerUIManager.UpdateHealthUI();
+        }
+
         if (currentHealth <= 0)
         {
             networkObject.Despawn();
@@ -69,39 +76,45 @@ public class PlayerSettings : NetworkBehaviour, INetworkSerializable
         serializer.SerializeValue(ref currentHealth);
     }
 
-    //apply power up to client side
-    // 
+    // Ubah parameter ke tipe `int`
     [ClientRpc]
-    public void ApplyPowerUpClientRpc(PowerUp.PowerUpType powerUpType)
+    public void ApplyPowerUpClientRpc(int powerUpTypeValue)
     {
+        // Konversi kembali ke `PowerUpType`
+        PowerUp.PowerUpType powerUpType = (PowerUp.PowerUpType)powerUpTypeValue;
+        string powerUpName = "";
+
         switch (powerUpType)
         {
             case PowerUp.PowerUpType.SpeedBoost:
-                Debug.Log("Speed Boost");
+                powerUpName = "Speed Boost";
                 playerMovement.movementSpeed *= 1.5f;
                 StartCoroutine(ResetSpeed());
                 break;
             case PowerUp.PowerUpType.NormalBullet:
+                powerUpName = "Normal Bullet";
                 gun.currentAmmo += 5;
-                Debug.Log("Normal Bullet");
                 break;
             case PowerUp.PowerUpType.HealthRestore:
+                powerUpName = "Health Restore";
                 currentHealth += 1;
-                if (currentHealth > maxHealth)
-                {
-                    currentHealth = maxHealth;
-                }
-
-                Debug.Log("Health Restore");
+                if (currentHealth > maxHealth) currentHealth = maxHealth;
                 break;
             case PowerUp.PowerUpType.PowerBullet:
+                powerUpName = "Power Bullet";
                 gun.powerAmmo += 1;
-                Debug.Log("Power Bullet");
                 break;
             case PowerUp.PowerUpType.VelocityBullet:
+                powerUpName = "Velocity Bullet";
                 gun.velocityAmmo += 1;
-                Debug.Log("Velocity Bullet");
                 break;
+        }
+
+        if (IsOwner && playerUIManager != null)
+        {
+            playerUIManager.DisplayPowerUpMessage(powerUpName);
+            playerUIManager.UpdateHealthUI();
+            playerUIManager.UpdateAmmoUI();
         }
     }
 }

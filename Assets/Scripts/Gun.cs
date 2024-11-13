@@ -26,21 +26,18 @@ public class Gun : NetworkBehaviour
 
     void Update()
     {
-        // Check if the player is the owner to ensure only they can trigger firing
         if (IsOwner && Input.GetKeyDown(KeyCode.Space) && currentAmmo > 0 && Time.time >= lastFiredTime + cooldownTime)
         {
-            // Request the server to spawn the bullet
             FireServerRpc();
         }
     }
 
-    // ServerRpc to handle bullet spawning on the server
-    [ServerRpc (RequireOwnership = false)]
+    [ServerRpc(RequireOwnership = false)]
     private void FireServerRpc(ServerRpcParams rpcParams = default)
     {
-        // Spawn bullet and set direction
-        var bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
+        if (currentAmmo <= 0) return;
 
+        var bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
         if (velocityAmmo > 0)
         {
             bulletSpeed *= 2f;
@@ -59,27 +56,23 @@ public class Gun : NetworkBehaviour
         }
 
         spawnedBullets.Add(bullet);
-        // Attach the NetworkObject component for networked spawning
         bullet.GetComponent<Bullet>().parent = this;
         bullet.GetComponent<NetworkObject>().Spawn();
-        // Set bullet's velocity based on player's forward direction
-        Vector3 bulletDirection = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
-        bullet.GetComponent<Rigidbody>().velocity = bulletDirection * bulletSpeed;
-
-        // Update cooldown and ammo for the firing player
+        bullet.GetComponent<Rigidbody>().velocity = new Vector3(transform.forward.x, 0, transform.forward.z).normalized * bulletSpeed;
         lastFiredTime = Time.time;
     }
 
-    // Optional: method to despawn bullets
-    [ServerRpc (RequireOwnership = false)]
+    [ServerRpc(RequireOwnership = false)]
     public void DespawnBulletsServerRpc()
     {
-        GameObject toDestroy = spawnedBullets[0];
-        toDestroy.GetComponent<NetworkObject>().Despawn();
-        spawnedBullets.RemoveAt(0);
+        if (spawnedBullets.Count > 0)
+        {
+            GameObject toDestroy = spawnedBullets[0];
+            toDestroy.GetComponent<NetworkObject>().Despawn();
+            spawnedBullets.RemoveAt(0);
+        }
     }
 
-    // Optional: method to reload ammo
     public void Reload()
     {
         currentAmmo = maxAmmo;
