@@ -8,8 +8,8 @@ public class PlayerUIManager : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI ammoText;
     [SerializeField] private TextMeshProUGUI powerUpText;
 
-    private int localCurrentHealth;
-    private int localCurrentAmmo;
+    private PlayerSettings playerSettings;
+    private Gun playerGun;
 
     private void Start()
     {
@@ -22,34 +22,35 @@ public class PlayerUIManager : NetworkBehaviour
             return;
         }
 
+        // Mendapatkan referensi ke komponen yang relevan
+        playerSettings = GetComponent<PlayerSettings>();
+        playerGun = GetComponent<Gun>();
+
         // Inisialisasi tampilan awal UI
         UpdateHealthUI();
         UpdateAmmoUI();
         powerUpText.text = ""; // Kosongkan pada awal permainan
     }
 
-    // Method untuk memperbarui nilai health secara lokal
-    public void SetHealth(int health)
+    private void Update()
     {
-        localCurrentHealth = health;
-        UpdateHealthUI();
-    }
+        if (!IsOwner) return;
 
-    // Method untuk memperbarui nilai ammo secara lokal
-    public void SetAmmo(int ammo)
-    {
-        localCurrentAmmo = ammo;
+        // Update UI untuk health dan ammo di setiap frame
+        UpdateHealthUI();
         UpdateAmmoUI();
     }
 
-    private void UpdateHealthUI()
+    // Ubah aksesibilitas metode ini menjadi `public`
+    public void UpdateHealthUI()
     {
-        healthText.text = "Health : " + localCurrentHealth;
+        healthText.text = "Health : " + playerSettings.currentHealth;
     }
 
-    private void UpdateAmmoUI()
+    // Ubah aksesibilitas metode ini menjadi `public`
+    public void UpdateAmmoUI()
     {
-        ammoText.text = "Ammo : " + localCurrentAmmo;
+        ammoText.text = "Ammo : " + playerGun.currentAmmo;
     }
 
     public void DisplayPowerUpMessage(string powerUpName)

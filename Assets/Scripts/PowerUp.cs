@@ -35,7 +35,7 @@ public class PowerUp : NetworkBehaviour
             if (player != null)
             {
                 // ApplyPowerUpServerRpc(player.NetworkObjectId);
-                player.ApplyPowerUpClientRpc(powerUpType);
+                player.ApplyPowerUpClientRpc((int)powerUpType);
                 DespawnObjectServerRpc();
             }
         }

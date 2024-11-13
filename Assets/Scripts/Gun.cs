@@ -16,44 +16,28 @@ public class Gun : NetworkBehaviour
     private float lastFiredTime;
 
     [SerializeField] private List<GameObject> spawnedBullets = new List<GameObject>();
-    private PlayerUIManager playerUIManager;
 
     private void Start()
     {
         // Initialize ammo and last fired time
         currentAmmo = maxAmmo;
         lastFiredTime = -cooldownTime;
-
-        // Inisialisasi UI untuk ammo di pemain lokal
-        if (IsOwner)
-        {
-            playerUIManager = GetComponent<PlayerUIManager>();
-            if (playerUIManager != null)
-            {
-                playerUIManager.SetAmmo(currentAmmo); // Inisialisasi tampilan ammo saat mulai
-            }
-        }
     }
 
     void Update()
     {
-        // Hanya pemain lokal yang bisa menembak
         if (IsOwner && Input.GetKeyDown(KeyCode.Space) && currentAmmo > 0 && Time.time >= lastFiredTime + cooldownTime)
         {
             FireServerRpc();
         }
     }
 
-    // ServerRpc untuk menembak peluru pada server
     [ServerRpc(RequireOwnership = false)]
     private void FireServerRpc(ServerRpcParams rpcParams = default)
     {
         if (currentAmmo <= 0) return;
 
-        // Spawn peluru dan atur arahnya
         var bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
-
-        // Atur jenis peluru berdasarkan jenis amunisi yang tersedia
         if (velocityAmmo > 0)
         {
             bulletSpeed *= 2f;
@@ -68,36 +52,30 @@ public class Gun : NetworkBehaviour
         {
             bullet.GetComponent<Bullet>().SetNormalBullet();
             bulletSpeed = 10f;
-            currentAmmo--; // Kurangi amunisi biasa jika tidak ada power atau velocity ammo
+            currentAmmo--;
         }
 
         spawnedBullets.Add(bullet);
         bullet.GetComponent<Bullet>().parent = this;
         bullet.GetComponent<NetworkObject>().Spawn();
-
-        // Set kecepatan peluru berdasarkan arah pemain
-        Vector3 bulletDirection = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
-        bullet.GetComponent<Rigidbody>().velocity = bulletDirection * bulletSpeed;
-
-        // Update UI ammo di pemain lokal
-        if (IsOwner && playerUIManager != null)
-        {
-            playerUIManager.SetAmmo(currentAmmo);
-        }
-
+        bullet.GetComponent<Rigidbody>().velocity = new Vector3(transform.forward.x, 0, transform.forward.z).normalized * bulletSpeed;
         lastFiredTime = Time.time;
     }
 
-    // Method untuk reload amunisi
+    [ServerRpc(RequireOwnership = false)]
+    public void DespawnBulletsServerRpc()
+    {
+        if (spawnedBullets.Count > 0)
+        {
+            GameObject toDestroy = spawnedBullets[0];
+            toDestroy.GetComponent<NetworkObject>().Despawn();
+            spawnedBullets.RemoveAt(0);
+        }
+    }
+
     public void Reload()
     {
         currentAmmo = maxAmmo;
         Debug.Log("Reloaded! Ammo refilled.");
-
-        // Update UI ammo di pemain lokal
-        if (IsOwner && playerUIManager != null)
-        {
-            playerUIManager.SetAmmo(currentAmmo);
-        }
     }
 }

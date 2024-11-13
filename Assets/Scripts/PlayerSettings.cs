@@ -5,7 +5,7 @@ using UnityEngine;
 using TMPro;
 using Unity.Collections;
 
-public class PlayerSettings : NetworkBehaviour
+public class PlayerSettings : NetworkBehaviour, INetworkSerializable
 {
     [SerializeField] private MeshRenderer meshRenderer;
     [SerializeField] private TextMeshProUGUI playerName;
@@ -23,11 +23,14 @@ public class PlayerSettings : NetworkBehaviour
     [SerializeField] private Gun gun;
     [SerializeField] private PlayerMovement playerMovement;
 
+    private PlayerUIManager playerUIManager;
+
     private void Awake()
     {
         GameManager.Instance.players.Add(this);
         meshRenderer = GetComponentInChildren<MeshRenderer>();
         currentHealth = maxHealth;
+        playerUIManager = GetComponent<PlayerUIManager>();
     }
 
     public override void OnNetworkSpawn()
@@ -37,24 +40,22 @@ public class PlayerSettings : NetworkBehaviour
         meshRenderer.material.color = colors[(int)OwnerClientId];
         playerIndex = (int)OwnerClientId;
 
-        // Inisialisasi UI health di awal
-        if (IsOwner)
+        if (IsOwner && playerUIManager != null)
         {
-            GetComponent<PlayerUIManager>().SetHealth(currentHealth);
+            playerUIManager.UpdateHealthUI();
+            playerUIManager.UpdateAmmoUI();
         }
     }
 
-    // Method untuk menerima damage
     [ServerRpc(RequireOwnership = false)]
     public void TakeDamageServerRpc(int damage)
     {
         if (!IsServer) return;
         currentHealth -= damage;
 
-        // Update UI health untuk pemain lokal
-        if (IsOwner)
+        if (IsOwner && playerUIManager != null)
         {
-            GetComponent<PlayerUIManager>().SetHealth(currentHealth);
+            playerUIManager.UpdateHealthUI();
         }
 
         if (currentHealth <= 0)
@@ -63,16 +64,57 @@ public class PlayerSettings : NetworkBehaviour
         }
     }
 
-    // Method untuk mengembalikan health
-    public void RestoreHealth(int amount)
+    private IEnumerator ResetSpeed()
     {
-        currentHealth += amount;
-        if (currentHealth > maxHealth) currentHealth = maxHealth;
+        yield return new WaitForSeconds(3f);
+        playerMovement.movementSpeed = 7f;
+    }
 
-        // Update UI health untuk pemain lokal
-        if (IsOwner)
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref maxHealth);
+        serializer.SerializeValue(ref currentHealth);
+    }
+
+    // Ubah parameter ke tipe `int`
+    [ClientRpc]
+    public void ApplyPowerUpClientRpc(int powerUpTypeValue)
+    {
+        // Konversi kembali ke `PowerUpType`
+        PowerUp.PowerUpType powerUpType = (PowerUp.PowerUpType)powerUpTypeValue;
+        string powerUpName = "";
+
+        switch (powerUpType)
         {
-            GetComponent<PlayerUIManager>().SetHealth(currentHealth);
+            case PowerUp.PowerUpType.SpeedBoost:
+                powerUpName = "Speed Boost";
+                playerMovement.movementSpeed *= 1.5f;
+                StartCoroutine(ResetSpeed());
+                break;
+            case PowerUp.PowerUpType.NormalBullet:
+                powerUpName = "Normal Bullet";
+                gun.currentAmmo += 5;
+                break;
+            case PowerUp.PowerUpType.HealthRestore:
+                powerUpName = "Health Restore";
+                currentHealth += 1;
+                if (currentHealth > maxHealth) currentHealth = maxHealth;
+                break;
+            case PowerUp.PowerUpType.PowerBullet:
+                powerUpName = "Power Bullet";
+                gun.powerAmmo += 1;
+                break;
+            case PowerUp.PowerUpType.VelocityBullet:
+                powerUpName = "Velocity Bullet";
+                gun.velocityAmmo += 1;
+                break;
+        }
+
+        if (IsOwner && playerUIManager != null)
+        {
+            playerUIManager.DisplayPowerUpMessage(powerUpName);
+            playerUIManager.UpdateHealthUI();
+            playerUIManager.UpdateAmmoUI();
         }
     }
 }
