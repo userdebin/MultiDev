@@ -230,7 +230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3973438255
+  GlobalObjectIdHash: 2723926121
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -1425,7 +1425,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 240441753
+  GlobalObjectIdHash: 1528833876
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -1679,6 +1679,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 298c06e17d36d894db2787ee00187ef1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerPerf: {fileID: 0}
+  playerSpawnDistance: 3
   players: []
   lobbyStatus:
     m_InternalValue: 0
@@ -1711,7 +1713,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3268798423
+  GlobalObjectIdHash: 1137185759
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -2304,7 +2306,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 1124021838}
-    PlayerPrefab: {fileID: 5439219009294469634, guid: d76ccec6bfe09ec42a37ca3c827902b1, type: 3}
+    PlayerPrefab: {fileID: 5439219009294469634, guid: f7da075495da9fc44ac48e3145972f52, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 4256e06595c2f6846acbeec905546843, type: 2}

@@ -161,8 +161,8 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8131992333576088020}
-  - {fileID: 1439939698299166834}
   - {fileID: 6528692249600293893}
+  - {fileID: 1439939698299166834}
   - {fileID: 5072543910063950592}
   m_Father: {fileID: 4201199619003809193}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
@@ -531,6 +531,7 @@ GameObject:
   - component: {fileID: 6361593381029237821}
   - component: {fileID: 3815426573924436285}
   - component: {fileID: 3602382245700271256}
+  - component: {fileID: 4420263450762002827}
   m_Layer: 0
   m_Name: PlayerWithUI
   m_TagString: Player
@@ -866,6 +867,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &4420263450762002827
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5439219009294469634}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88714f8bbd1b4c74ba5d587d2b2f2f58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthText: {fileID: 2890124290066496744}
+  ammoText: {fileID: 6138656908904071243}
+  powerUpText: {fileID: 3549561221114554620}
 --- !u!1 &5678392869729074582
 GameObject:
   m_ObjectHideFlags: 0
