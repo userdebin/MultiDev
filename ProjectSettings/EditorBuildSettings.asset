@@ -6,6 +6,21 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/NetcodeMultiplayerTest.unity
+    path: Assets/Menu/Menu.unity
+    guid: 1659ced58ec51e54185647abbe3938bd
+  - enabled: 1
+    path: Assets/Menu/Lobby/Lobby.unity
+    guid: 18ce0afda238bd44096fe15981e77c6a
+  - enabled: 1
+    path: Assets/Scenes/Gameplay.unity
+    guid: b81faa0a0670287449aa60be30ffee44
+  - enabled: 0
+    path: Assets/Lobby/Lobby.unity
+    guid: a377b4455be23c74bb6daff32efa8b74
+  - enabled: 0
+    path: Assets/Scenes/SampleScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 0
+    path: Assets/Scenes/NetcodeMultiplayerTest.unity
+    guid: 1f0f842499116624e90e2c4154f0aded
   m_configObjects: {}

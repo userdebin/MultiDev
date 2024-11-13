@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Collections;
@@ -9,18 +7,18 @@ using UnityEngine;
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
+    [SerializeField] private Transform playerPerf;
+    [SerializeField] private float playerSpawnDistance = 3f;
+    private Vector3 spawnPosition = new Vector3(0, 0, 0);
 
-    // ListPlayer 
     public List<PlayerSettings> players = new List<PlayerSettings>();
 
-    //Sync variable
     public NetworkVariable<int> lobbyStatus = new NetworkVariable<int>(0);
+
+
     public GameObject winUI;
     public TextMeshProUGUI winnerText;
 
-    // 0 = Standby
-    // 1 = Started
-    // 2 = Ended
     private void Awake()
     {
         if (Instance == null)
@@ -32,52 +30,70 @@ public class GameManager : NetworkBehaviour
             Destroy(gameObject);
         }
     }
-
-    // Method to handle player death
-
-    // if players count is 1, then the game is started
-
-    private void Update()
+private void Start()
+{
+    if (IsServer) 
     {
-        if (!IsServer) return;
-        if (players.Count == 2)
-        {
-            lobbyStatus.Value = 1;
-        }
-        PlayerDeathClientRpc();
+        SpawnPlayerServerRpc();
     }
+}
 
-    [ClientRpc(RequireOwnership = false)]
-    public void PlayerDeathClientRpc()
-    {
-        if (lobbyStatus.Value != 1)
+[ServerRpc(RequireOwnership = false)]
+private void SpawnPlayerServerRpc()
+{
+    if (!IsServer) return;
+
+    int clientIndex = 0;
+
+
+
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
-            return;
+            Vector3 playerPosition = spawnPosition + new Vector3(clientIndex * playerSpawnDistance, 5.5f, 0);
+            Transform playerTransform = Instantiate(playerPerf, playerPosition, Quaternion.identity);
+            playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+
+
+            playerTransform.name = $"Player {clientIndex}";
+             clientIndex++;
         }
+    
+}
 
-        // Check player health with for loop
-        for (int i = 0; i < players.Count; i++)
+   private void Update()
+{
+    if (!IsServer) return;
+
+    if (players.Count >= 1)
+    {
+        lobbyStatus.Value = 1;
+    }
+    PlayerDeathCheck();
+}
+
+    private void PlayerDeathCheck()
+    {
+        if (lobbyStatus.Value != 1) return;
+
+        for (int i = players.Count - 1; i >= 0; i--)
         {
-            // how do i check if null ? 
-            if (players[i].currentHealth <= 0 || players[i] == null)
+            if (players[i] == null || players[i].currentHealth <= 0)
             {
                 players.RemoveAt(i);
             }
         }
 
-        if (players.Count != 1)
-        {
-            return;
-        }
-
-        lobbyStatus.Value = 2;
-
-        // Handle client-side updates
         if (players.Count == 1)
         {
-            winUI.SetActive(true);
-            int player = players[0].playerIndex + 1;
-            winnerText.text = "P" + player + " Win";
+            lobbyStatus.Value = 2;
+            ShowWinUIClientRpc(players[0].playerIndex);
         }
+    }
+
+    [ClientRpc]
+    private void ShowWinUIClientRpc(int winnerIndex)
+    {
+        winUI.SetActive(true);
+        winnerText.text = "P" + (winnerIndex + 1) + " Win";
     }
 }
