@@ -37,8 +37,8 @@ public class LobbyManager : MonoBehaviour
 
     public enum GameMode
     {
-        CaptureTheFlag,
-        Conquest
+        KillForAll,    // Default game mode
+        ComingSoon     // Placeholder for future modes
     }
 
     public enum PlayerCharacter
