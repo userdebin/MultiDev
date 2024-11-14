@@ -8,7 +8,7 @@ using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+using UnityEngine.UI; // Tambahkan ini untuk menggunakan UI Button
 
 public class LobbyManager : MonoBehaviour
 {
@@ -23,7 +23,7 @@ public class LobbyManager : MonoBehaviour
     public event EventHandler<LobbyEventArgs> OnJoinedLobbyUpdate;
     public event EventHandler<LobbyEventArgs> OnKickedFromLobby;
     public event EventHandler<LobbyEventArgs> OnLobbyGameModeChanged;
-
+    private bool isClientStarted = false;
     public class LobbyEventArgs : EventArgs
     {
         public Lobby lobby;
@@ -53,7 +53,7 @@ public class LobbyManager : MonoBehaviour
     private Lobby joinedLobby;
     private string playerName;
 
-    [SerializeField] private Button startButton;
+    [SerializeField] private Button startButton; // Referensi ke tombol Start
 
     private void Awake()
     {
@@ -64,8 +64,7 @@ public class LobbyManager : MonoBehaviour
     {
         if (startButton != null)
         {
-            startButton.gameObject.SetActive(false);
-            startButton.onClick.AddListener(OnStartButtonClicked);
+            startButton.gameObject.SetActive(false); // Default nonaktif untuk semua pemain selain host
         }
     }
 
@@ -73,16 +72,6 @@ public class LobbyManager : MonoBehaviour
     {
         HandleLobbyHeartbeat();
         HandleLobbyPolling();
-    }
-
-    private void OnStartButtonClicked()
-    {
-        if (IsLobbyHost())
-        {
-            UILogManager.Instance.DisplayLog("Starting game as host...");
-            NetworkManager.Singleton.StartHost();
-            NetworkManager.Singleton.SceneManager.LoadScene("PlayingField", LoadSceneMode.Single);
-        }
     }
 
     public async void Authenticate(string playerName)
@@ -95,6 +84,7 @@ public class LobbyManager : MonoBehaviour
 
         AuthenticationService.Instance.SignedIn += () =>
         {
+            Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId);
             UILogManager.Instance.DisplayLog("Signed in! Player ID: " + AuthenticationService.Instance.PlayerId);
             RefreshLobbyList();
         };
@@ -135,26 +125,25 @@ public class LobbyManager : MonoBehaviour
                 else
                 {
                     UpdateStartButtonVisibility();
-                    CheckAutoJoinAsClient(); // Cek dan otomatis join sebagai client jika host sudah memulai
+
+                    // Jika bukan host dan belum memulai client, maka mulai sebagai client
+                    if (!IsLobbyHost() && !isClientStarted && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsClient)
+                    {
+                        NetworkManager.Singleton.StartClient();
+                        isClientStarted = true;
+                        UILogManager.Instance.DisplayLog("Connected as client.");
+                    }
                 }
             }
         }
     }
+
 
     private void UpdateStartButtonVisibility()
     {
         if (startButton != null)
         {
             startButton.gameObject.SetActive(IsLobbyHost());
-        }
-    }
-
-    private void CheckAutoJoinAsClient()
-    {
-        if (!IsLobbyHost() && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsHost)
-        {
-            UILogManager.Instance.DisplayLog("Joining game as client...");
-            NetworkManager.Singleton.StartClient();
         }
     }
 
@@ -215,7 +204,7 @@ public class LobbyManager : MonoBehaviour
         OnJoinedLobby?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
         UILogManager.Instance.DisplayLog("Created Lobby: " + joinedLobby.Name);
 
-        UpdateStartButtonVisibility();
+        UpdateStartButtonVisibility(); // Periksa status host setelah lobby dibuat
     }
 
     public async void RefreshLobbyList()
@@ -237,8 +226,7 @@ public class LobbyManager : MonoBehaviour
         joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobby.Id, new JoinLobbyByIdOptions { Player = player });
         OnJoinedLobby?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
 
-        UpdateStartButtonVisibility();
-        CheckAutoJoinAsClient();
+        UpdateStartButtonVisibility(); // Periksa status host setelah bergabung dengan lobby
     }
 
     public async void UpdatePlayerName(string newName)
@@ -314,10 +302,36 @@ public class LobbyManager : MonoBehaviour
 
             if (startButton != null)
             {
-                startButton.gameObject.SetActive(false);
+                startButton.gameObject.SetActive(false); // Nonaktifkan tombol Start setelah keluar dari lobby
             }
         }
     }
+
+    public void StartGame()
+    {
+        if (IsLobbyHost() && joinedLobby.Players.Count >= 2)
+        {
+            UILogManager.Instance.DisplayLog("Starting game...");
+
+            NetworkManager.Singleton.Shutdown();
+
+            if (IsLobbyHost())
+            {
+                NetworkManager.Singleton.StartHost();
+                NetworkManager.Singleton.SceneManager.LoadScene("PlayingField", LoadSceneMode.Single);
+            }
+            else
+            {
+                NetworkManager.Singleton.StartClient();
+            }
+        }
+        else
+        {
+            UILogManager.Instance.DisplayLog("Tidak bisa memulai game: Hanya host yang bisa mulai, dan diperlukan minimal 2 pemain.");
+        }
+    }
+
+
 
     public async void UpdatePlayerCharacter(PlayerCharacter playerCharacter)
     {
