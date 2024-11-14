@@ -48,25 +48,41 @@ public class LobbyManager : MonoBehaviour
         Zombie
     }
 
-    [SerializeField] private Button startGameButton; // Referensi tombol Start Game
-
     private float heartbeatTimer;
     private float lobbyPollTimer;
     private Lobby joinedLobby;
     private string playerName;
 
+    [SerializeField] private Button startButton;
+
     private void Awake()
     {
         Instance = this;
-        UILogManager.Instance.DisplayLog("Lobby Manager Initialized");
-        startGameButton.gameObject.SetActive(false); // Tombol hanya aktif untuk host
-        startGameButton.onClick.AddListener(StartGame); // Set fungsi saat tombol diklik
+    }
+
+    private void Start()
+    {
+        if (startButton != null)
+        {
+            startButton.gameObject.SetActive(false);
+            startButton.onClick.AddListener(OnStartButtonClicked);
+        }
     }
 
     private void Update()
     {
         HandleLobbyHeartbeat();
         HandleLobbyPolling();
+    }
+
+    private void OnStartButtonClicked()
+    {
+        if (IsLobbyHost())
+        {
+            UILogManager.Instance.DisplayLog("Starting game as host...");
+            NetworkManager.Singleton.StartHost();
+            NetworkManager.Singleton.SceneManager.LoadScene("PlayingField", LoadSceneMode.Single);
+        }
     }
 
     public async void Authenticate(string playerName)
@@ -79,12 +95,11 @@ public class LobbyManager : MonoBehaviour
 
         AuthenticationService.Instance.SignedIn += () =>
         {
-            UILogManager.Instance.DisplayLog("Signed in successfully");
+            UILogManager.Instance.DisplayLog("Signed in! Player ID: " + AuthenticationService.Instance.PlayerId);
             RefreshLobbyList();
         };
 
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        UILogManager.Instance.DisplayLog("Authenticating...");
     }
 
     private async void HandleLobbyHeartbeat()
@@ -96,7 +111,6 @@ public class LobbyManager : MonoBehaviour
             {
                 heartbeatTimer = 15f;
                 await LobbyService.Instance.SendHeartbeatPingAsync(joinedLobby.Id);
-                UILogManager.Instance.DisplayLog("Heartbeat sent to maintain lobby connection");
             }
         }
     }
@@ -114,29 +128,33 @@ public class LobbyManager : MonoBehaviour
 
                 if (!IsPlayerInLobby())
                 {
-                    UILogManager.Instance.DisplayLog("Kicked from lobby!");
+                    UILogManager.Instance.DisplayLog("Kicked from Lobby!");
                     OnKickedFromLobby?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
                     joinedLobby = null;
                 }
                 else
                 {
-                    UILogManager.Instance.DisplayLog("Lobby updated");
-                    CheckIfHostAndDisplayStartButton(); // Periksa jika host dan tampilkan tombol start
+                    UpdateStartButtonVisibility();
+                    CheckAutoJoinAsClient(); // Cek dan otomatis join sebagai client jika host sudah memulai
                 }
             }
         }
     }
 
-    private void CheckIfHostAndDisplayStartButton()
+    private void UpdateStartButtonVisibility()
     {
-        // Tampilkan tombol Start jika pemain adalah host dan ada minimal 2 pemain dalam lobby
-        if (IsLobbyHost() && joinedLobby.Players.Count >= 2)
+        if (startButton != null)
         {
-            startGameButton.gameObject.SetActive(true);
+            startButton.gameObject.SetActive(IsLobbyHost());
         }
-        else
+    }
+
+    private void CheckAutoJoinAsClient()
+    {
+        if (!IsLobbyHost() && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsHost)
         {
-            startGameButton.gameObject.SetActive(false);
+            UILogManager.Instance.DisplayLog("Joining game as client...");
+            NetworkManager.Singleton.StartClient();
         }
     }
 
@@ -173,7 +191,10 @@ public class LobbyManager : MonoBehaviour
         if (IsLobbyHost())
         {
             UpdateLobbyGameMode(newGameMode);
-            UILogManager.Instance.DisplayLog("Game mode changed to " + newGameMode);
+        }
+        else
+        {
+            UILogManager.Instance.DisplayLog("Only the host can change the game mode.");
         }
     }
 
@@ -192,9 +213,9 @@ public class LobbyManager : MonoBehaviour
 
         joinedLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, options);
         OnJoinedLobby?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
-        UILogManager.Instance.DisplayLog("Lobby created: " + joinedLobby.Name);
-        Debug.Log("Created Lobby " + joinedLobby.Name);
-        CheckIfHostAndDisplayStartButton(); // Pastikan tombol start ditampilkan jika pembuat lobby adalah host
+        UILogManager.Instance.DisplayLog("Created Lobby: " + joinedLobby.Name);
+
+        UpdateStartButtonVisibility();
     }
 
     public async void RefreshLobbyList()
@@ -203,12 +224,10 @@ public class LobbyManager : MonoBehaviour
         {
             QueryResponse lobbyListQueryResponse = await Lobbies.Instance.QueryLobbiesAsync();
             OnLobbyListChanged?.Invoke(this, new OnLobbyListChangedEventArgs { lobbyList = lobbyListQueryResponse.Results });
-            UILogManager.Instance.DisplayLog("Lobby list refreshed");
         }
         catch (LobbyServiceException e)
         {
-            UILogManager.Instance.DisplayLog("Error refreshing lobby list");
-            Debug.Log(e);
+            UILogManager.Instance.DisplayLog("Error refreshing lobby list: " + e.Message);
         }
     }
 
@@ -217,9 +236,9 @@ public class LobbyManager : MonoBehaviour
         Player player = GetPlayer();
         joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobby.Id, new JoinLobbyByIdOptions { Player = player });
         OnJoinedLobby?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
-        UILogManager.Instance.DisplayLog("Joined lobby: " + joinedLobby.Name);
 
-        CheckIfHostAndDisplayStartButton(); // Pastikan host menampilkan tombol start
+        UpdateStartButtonVisibility();
+        CheckAutoJoinAsClient();
     }
 
     public async void UpdatePlayerName(string newName)
@@ -238,12 +257,10 @@ public class LobbyManager : MonoBehaviour
 
                 joinedLobby = await LobbyService.Instance.UpdatePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId, options);
                 OnJoinedLobbyUpdate?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
-                UILogManager.Instance.DisplayLog("Player name updated to " + newName);
             }
             catch (LobbyServiceException e)
             {
-                UILogManager.Instance.DisplayLog("Failed to update player name");
-                Debug.Log(e);
+                UILogManager.Instance.DisplayLog("Error updating player name: " + e.Message);
             }
         }
     }
@@ -255,12 +272,10 @@ public class LobbyManager : MonoBehaviour
             try
             {
                 await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, playerId);
-                UILogManager.Instance.DisplayLog("Player kicked from lobby");
             }
             catch (LobbyServiceException e)
             {
-                UILogManager.Instance.DisplayLog("Failed to kick player");
-                Debug.Log(e);
+                UILogManager.Instance.DisplayLog("Error kicking player: " + e.Message);
             }
         }
     }
@@ -271,7 +286,7 @@ public class LobbyManager : MonoBehaviour
         {
             try
             {
-                joinedLobby = await Lobbies.Instance.UpdateLobbyAsync(joinedLobby.Id, new UpdateLobbyOptions
+                joinedLobby = await LobbyService.Instance.UpdateLobbyAsync(joinedLobby.Id, new UpdateLobbyOptions
                 {
                     Data = new Dictionary<string, DataObject>
                     {
@@ -280,12 +295,10 @@ public class LobbyManager : MonoBehaviour
                 });
 
                 OnLobbyGameModeChanged?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
-                UILogManager.Instance.DisplayLog("Lobby game mode updated to " + gameMode);
             }
             catch (LobbyServiceException e)
             {
-                UILogManager.Instance.DisplayLog("Failed to update game mode");
-                Debug.Log(e);
+                UILogManager.Instance.DisplayLog("Error updating game mode: " + e.Message);
             }
         }
     }
@@ -297,26 +310,14 @@ public class LobbyManager : MonoBehaviour
             await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
             joinedLobby = null;
             OnLeftLobby?.Invoke(this, EventArgs.Empty);
-            UILogManager.Instance.DisplayLog("Left lobby");
+            UILogManager.Instance.DisplayLog("Left the lobby");
+
+            if (startButton != null)
+            {
+                startButton.gameObject.SetActive(false);
+            }
         }
     }
-
-    public void StartGame()
-    {
-        if (IsLobbyHost() && NetworkManager.Singleton.IsServer && joinedLobby.Players.Count >= 2)
-        {
-            UILogManager.Instance.DisplayLog("Starting game...");
-            Debug.Log("Starting game with host permissions...");
-
-            NetworkManager.Singleton.SceneManager.LoadScene("PlayingField", LoadSceneMode.Single);
-        }
-        else
-        {
-            UILogManager.Instance.DisplayLog("Cannot start game: Need at least 2 players and must be host.");
-            Debug.Log("Failed to start game: Not enough players or not host.");
-        }
-    }
-
 
     public async void UpdatePlayerCharacter(PlayerCharacter playerCharacter)
     {
@@ -334,13 +335,13 @@ public class LobbyManager : MonoBehaviour
 
                 string playerId = AuthenticationService.Instance.PlayerId;
                 joinedLobby = await LobbyService.Instance.UpdatePlayerAsync(joinedLobby.Id, playerId, options);
+
                 OnJoinedLobbyUpdate?.Invoke(this, new LobbyEventArgs { lobby = joinedLobby });
-                UILogManager.Instance.DisplayLog("Player character updated to " + playerCharacter);
+                UILogManager.Instance.DisplayLog("Player character updated to: " + playerCharacter);
             }
             catch (LobbyServiceException e)
             {
-                UILogManager.Instance.DisplayLog("Failed to update character");
-                Debug.Log(e);
+                UILogManager.Instance.DisplayLog("Error updating player character: " + e.Message);
             }
         }
     }
